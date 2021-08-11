@@ -2,6 +2,6 @@
 
 ### yarn
 
-### yarn dev (terminal 1 )
+### yarn watch (terminal 1 )
 
 ### yarn start (terminal 2 )
