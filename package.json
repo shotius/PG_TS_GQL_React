@@ -6,7 +6,8 @@
   "scripts": {
     "watch": "NODE_PATH=./src tsc -w",
     "start": "NODE_PATH=./dist nodemon dist/index.js",
-    "start2": "NODE_PATH=./src ts-node src/index.ts"
+    "start2": "NODE_PATH=./src ts-node src/index.ts",
+    "create:migration": "mikro-orm migration:create "
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,7 @@
     "@mikro-orm/migrations": "^4.5.7",
     "@mikro-orm/postgresql": "^4.5.7",
     "apollo-server-express": "^2",
+    "argon2": "^0.28.2",
     "express": "^4.17.1",
     "graphql": "^15.5.1",
     "pg": "^8.7.1",

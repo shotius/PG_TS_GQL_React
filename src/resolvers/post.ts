@@ -4,11 +4,13 @@ import { Post } from "entities/Post";
 
 @Resolver()
 export class PostResolver {
+  // get all posts
   @Query(() => [Post])
   posts(@Ctx() { em }: MyContext): Promise<Post[]> {
     return em.find(Post, {});
   }
 
+  // get one posts
   @Query(() => Post, { nullable: true })
   post(
       @Arg("id") id: number,
@@ -17,6 +19,7 @@ export class PostResolver {
     return em.findOne(Post, { id });
   }
 
+  // create post
   @Mutation(() => Post)
   async createPost(@Arg("title") title: string, @Ctx() { em }: MyContext) {
     const post = em.create(Post, { title });
@@ -24,6 +27,7 @@ export class PostResolver {
     return post;
   }
 
+  // update post
   @Mutation(() => Post, {nullable: true})
   async updatePost(
     @Arg("id") id: number,
@@ -41,6 +45,7 @@ export class PostResolver {
     return post 
   }
 
+  // delete post
   @Mutation(() => Boolean)
   async deletePost(
     @Arg('id') id: number,

@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { UserResover } from './resolvers/user';
 import { PostResolver } from './resolvers/post';
 import { HelloResolver } from "./resolvers/hello";
 import { MikroORM } from "@mikro-orm/core";
@@ -16,7 +17,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver, PostResolver],
+      resolvers: [HelloResolver, PostResolver, UserResover],
       validate: false,
     }),
     context: () => ({em: orm.em})

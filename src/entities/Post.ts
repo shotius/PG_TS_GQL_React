@@ -20,7 +20,4 @@ export class Post {
   @Field()
   @Property({ type: "text" })
   title!: string;
-
-  @Property()
-  author: string
 }
