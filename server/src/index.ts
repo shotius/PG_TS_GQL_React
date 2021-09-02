@@ -12,6 +12,7 @@ import { buildSchema } from "type-graphql";
 import redis from "redis";
 import session from 'express-session';
 import connectRedis from "connect-redis";
+import cors from 'cors'
 
 declare module 'express-session' {
   export interface SessionData {
@@ -33,6 +34,10 @@ const main = async () => {
 
   const app = express();
 
+  app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+  }))
   // session middleware for session cookies
   // it saves userId in the browser and send the {userId: id}
   // to the redis store
@@ -61,7 +66,7 @@ const main = async () => {
     context: ({req, res}): MyContext => ({ em: orm.em, req, res }),
   });
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen(4000, () => console.log("server is running on port 4000"));
 };
