@@ -9,7 +9,6 @@ import { useRouter } from "next/dist/client/router";
 
 interface registerProps {}
 
-
 const Login: React.FC<registerProps> = () => {
   const router = useRouter()
   const [, login] = useLoginMutation()

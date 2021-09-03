@@ -11,6 +11,8 @@ import {
 } from "type-graphql";
 import { User } from "entities/User";
 import argon2 from "argon2";
+import { COOKIE_NAME } from "../constants";
+
 
 @InputType()
 class UserInputArgs {
@@ -133,5 +135,23 @@ export class UserResover {
     return {
       user,
     };
+  }
+
+  @Mutation(() => Boolean)
+  logout(
+    @Ctx() {req, res}: MyContext
+  ) {
+    return new Promise((resolve) => {
+      res.clearCookie(COOKIE_NAME)
+      req.session.destroy((err) => {
+        if (err){
+          console.log(err)
+          resolve(err)
+          return
+        } else {
+          resolve(true)
+        }
+      })
+    })
   }
 }

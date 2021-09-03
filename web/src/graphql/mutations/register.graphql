@@ -1,9 +1,8 @@
 mutation Register($username:String!, $password: String!){
   register(options:{username: $username, password: $password}){
     user{
-      id
+      ...RegularUser
       createdAt
-      username
     }
     errors{
       field
