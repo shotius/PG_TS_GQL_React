@@ -165,38 +165,40 @@ export class UserResolver {
     }
 
     // validate userid by token in redis
-    const userId = await redis.get(
-      FORGOT_PASSWORD_PREFIX + token
-    )
+    const key = FORGOT_PASSWORD_PREFIX + token;
+    const userId = await redis.get(key);
     if (!userId) {
       return {
         errors: [
           {
             field: "token",
-            message: "token expired or invalid"
-          }
-        ]
-      }
+            message: "token expired or invalid",
+          },
+        ],
+      };
     }
 
     // check for user
-    const user = await em.findOne(User, {id: parseInt(userId)})
+    const user = await em.findOne(User, { id: parseInt(userId) });
     if (!user) {
       return {
         errors: [
           {
             field: "token",
-            message: "user not found"
-          }
-        ]
-      }
+            message: "user not found",
+          },
+        ],
+      };
     }
 
+    // delete token from redis to not to reuse it
+    await redis.del(key)
+    
     // change user password
     user.password = await argon2.hash(newPassword);
-    await em.persistAndFlush(user)
+    await em.persistAndFlush(user);
 
-    return {user}
+    return { user };
   }
 
   @Mutation(() => Boolean)
