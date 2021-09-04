@@ -8,7 +8,7 @@ export const validateRegister = (
     return [
       {
         field: "email",
-        message: "email is not valid",
+        message: "email should include '@'",
       },
     ];
   }

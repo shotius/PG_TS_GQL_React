@@ -25,6 +25,7 @@ export type Mutation = {
   register: UserResponse;
   login: UserResponse;
   logout: Scalars['Boolean'];
+  changePassword: UserResponse;
   forgotPassword: Scalars['Boolean'];
   createPost: Post;
   updatePost?: Maybe<Post>;
@@ -40,6 +41,12 @@ export type MutationRegisterArgs = {
 export type MutationLoginArgs = {
   password: Scalars['String'];
   usernameOrEmail: Scalars['String'];
+};
+
+
+export type MutationChangePasswordArgs = {
+  newPassword: Scalars['String'];
+  token: Scalars['String'];
 };
 
 
@@ -74,6 +81,7 @@ export type Post = {
 export type Query = {
   __typename?: 'Query';
   me?: Maybe<User>;
+  users?: Maybe<Array<User>>;
   posts: Array<Post>;
   post?: Maybe<Post>;
   hello: Scalars['String'];
@@ -106,6 +114,14 @@ export type UserResponse = {
 };
 
 export type RegularUserFragment = { __typename?: 'User', id: number, username: string };
+
+export type ChangePasswordMutationVariables = Exact<{
+  newPassword: Scalars['String'];
+  token: Scalars['String'];
+}>;
+
+
+export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: { __typename?: 'UserResponse', user?: Maybe<{ __typename?: 'User', id: number, username: string }>, errors?: Maybe<Array<{ __typename?: 'FieldError', field: string, message: string }>> } };
 
 export type LoginMutationVariables = Exact<{
   usernameOrEmail: Scalars['String'];
@@ -143,6 +159,23 @@ export const RegularUserFragmentDoc = gql`
   username
 }
     `;
+export const ChangePasswordDocument = gql`
+    mutation ChangePassword($newPassword: String!, $token: String!) {
+  changePassword(newPassword: $newPassword, token: $token) {
+    user {
+      ...RegularUser
+    }
+    errors {
+      field
+      message
+    }
+  }
+}
+    ${RegularUserFragmentDoc}`;
+
+export function useChangePasswordMutation() {
+  return Urql.useMutation<ChangePasswordMutation, ChangePasswordMutationVariables>(ChangePasswordDocument);
+};
 export const LoginDocument = gql`
     mutation Login($usernameOrEmail: String!, $password: String!) {
   login(usernameOrEmail: $usernameOrEmail, password: $password) {

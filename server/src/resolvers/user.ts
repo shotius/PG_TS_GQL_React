@@ -1,4 +1,4 @@
-import { validateRegister } from './../utils/valideteRegister';
+import { validateRegister } from "./../utils/valideteRegister";
 import { MyContext } from "types";
 import {
   Arg,
@@ -11,9 +11,11 @@ import {
 } from "type-graphql";
 import { User } from "entities/User";
 import argon2 from "argon2";
-import { COOKIE_NAME } from "../constants";
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../constants";
 import { UserInputArgs } from "./UserInputArgs";
 import { FieldError } from "./FieldError";
+import { v4 } from "uuid";
+import { sendEmail } from "utils/sendMail";
 
 @ObjectType()
 class UserResponse {
@@ -36,17 +38,22 @@ export class UserResolver {
     return user;
   }
 
+  @Query(() => [User], { nullable: true })
+  async users(@Ctx() { em }: MyContext): Promise<User[]> {
+    const users = em.find(User, {});
+    return users;
+  }
+
   // Register user
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UserInputArgs,
     @Ctx() { em }: MyContext
   ): Promise<UserResponse> {
-
-    const errors = validateRegister(options)
+    const errors = validateRegister(options);
     if (errors) {
-      return {errors}
-    }    
+      return { errors };
+    }
 
     const hashedPassword = await argon2.hash(options.password);
     const user = em.create(User, {
@@ -59,11 +66,16 @@ export class UserResolver {
       await em.persistAndFlush(user);
     } catch (error) {
       if (error.code === "23505") {
+        console.log(error);
         return {
           errors: [
             {
               field: "username",
               message: "username already exists",
+            },
+            {
+              field: "email",
+              message: "email already exist",
             },
           ],
         };
@@ -79,7 +91,6 @@ export class UserResolver {
     @Arg("password") password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-
     // find a user by username or email
     const user = await em.findOne(
       User,
@@ -92,7 +103,7 @@ export class UserResolver {
       return {
         errors: [
           {
-            field: "username",
+            field: "usernameOrEmail",
             message: "Username not found",
           },
         ],
@@ -135,8 +146,83 @@ export class UserResolver {
     });
   }
 
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { redis, em }: MyContext
+  ): Promise<UserResponse> {
+    // validate password
+    if (newPassword.length < 2) {
+      return {
+        errors: [
+          {
+            field: "newPassword",
+            message: "message must be longer then 2 characters",
+          },
+        ],
+      };
+    }
+
+    // validate userid by token in redis
+    const userId = await redis.get(
+      FORGOT_PASSWORD_PREFIX + token
+    )
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "token expired or invalid"
+          }
+        ]
+      }
+    }
+
+    // check for user
+    const user = await em.findOne(User, {id: parseInt(userId)})
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "token",
+            message: "user not found"
+          }
+        ]
+      }
+    }
+
+    // change user password
+    user.password = await argon2.hash(newPassword);
+    await em.persistAndFlush(user)
+
+    return {user}
+  }
+
   @Mutation(() => Boolean)
-  async forgotPassword(@Arg("email") email: string, @Ctx() { em }: MyContext) {
-    // const user = await em.findOne(User, { email });
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { em, redis }: MyContext
+  ) {
+    const user = await em.findOne(User, { email });
+    if (!user) {
+      return true;
+    }
+
+    const token = v4();
+
+    await redis.set(
+      FORGOT_PASSWORD_PREFIX + token,
+      user.id,
+      "ex",
+      1000 * 60 * 60
+    );
+
+    await sendEmail(
+      user.email,
+      `<a href="http://localhost:3000/change-password/${token}">change a password</a>`
+    );
+
+    return true;
   }
 }
