@@ -9,7 +9,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
     fetchOptions: {
       credentials: "include" as const,
     },
-    // cache updates 
+    // cache updates false
     exchanges: [
       dedupExchange,
       cacheExchange({
@@ -56,15 +56,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
                 cache,
                 {query: MeDocument},
                 _result,
-                (result, query) => {
-                  if (result.logout) {
-                    return {
-                      me: null
-                    }
-                  } else {
-                    return query
-                  }
-                }
+                () => ({me: null})
               )
             }
           },
