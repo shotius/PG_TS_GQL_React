@@ -16,6 +16,7 @@ import { UserInputArgs } from "./UserInputArgs";
 import { FieldError } from "./FieldError";
 import { v4 } from "uuid";
 import { sendEmail } from "utils/sendMail";
+import { getConnection } from "typeorm";
 
 @ObjectType()
 class UserResponse {
@@ -29,26 +30,24 @@ class UserResponse {
 export class UserResolver {
   // me function
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { em, req }: MyContext) {
+  me(@Ctx() { req }: MyContext) {
     if (!req.session.userId) {
       return null;
     }
     const id = req.session.userId;
-    const user = await em.findOne(User, { id });
-    return user;
+    return User.findOne(id);
   }
 
   @Query(() => [User], { nullable: true })
-  async users(@Ctx() { em }: MyContext): Promise<User[]> {
-    const users = em.find(User, {});
+  async users(): Promise<User[]> {
+    const users = User.find({});
     return users;
   }
 
   // Register user
   @Mutation(() => UserResponse)
   async register(
-    @Arg("options") options: UserInputArgs,
-    @Ctx() { em }: MyContext
+    @Arg("options") options: UserInputArgs
   ): Promise<UserResponse> {
     const errors = validateRegister(options);
     if (errors) {
@@ -56,14 +55,21 @@ export class UserResolver {
     }
 
     const hashedPassword = await argon2.hash(options.password);
-    const user = em.create(User, {
-      username: options.username,
-      password: hashedPassword,
-      email: options.email,
-      createdAt: new Date(),
-    });
+    let user;
     try {
-      await em.persistAndFlush(user);
+      const result = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
+          username: options.username,
+          password: hashedPassword,
+          email: options.email,
+        })
+        .returning("*")
+        .execute();
+      console.log("result: ", result);
+      user = (await result).raw[0];
     } catch (error) {
       if (error.code === "23505") {
         console.log(error);
@@ -89,14 +95,13 @@ export class UserResolver {
   async login(
     @Arg("usernameOrEmail") usernameOrEmail: string,
     @Arg("password") password: string,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     // find a user by username or email
-    const user = await em.findOne(
-      User,
+    const user = await User.findOne(
       usernameOrEmail.includes("@")
-        ? { email: usernameOrEmail }
-        : { username: usernameOrEmail }
+        ? { where: { email: usernameOrEmail } }
+        : { where: { username: usernameOrEmail } }
     );
 
     if (!user) {
@@ -150,7 +155,7 @@ export class UserResolver {
   async changePassword(
     @Arg("token") token: string,
     @Arg("newPassword") newPassword: string,
-    @Ctx() { redis, em }: MyContext
+    @Ctx() { redis }: MyContext
   ): Promise<UserResponse> {
     // validate password
     if (newPassword.length < 2) {
@@ -179,7 +184,8 @@ export class UserResolver {
     }
 
     // check for user
-    const user = await em.findOne(User, { id: parseInt(userId) });
+    const userIdNum = parseInt(userId);
+    const user = await User.findOne(userIdNum);
     if (!user) {
       return {
         errors: [
@@ -192,11 +198,15 @@ export class UserResolver {
     }
 
     // delete token from redis to not to reuse it
-    await redis.del(key)
-    
+    await redis.del(key);
+
     // change user password
-    user.password = await argon2.hash(newPassword);
-    await em.persistAndFlush(user);
+    const updatedUser = await User.update(
+      { id: userIdNum },
+      { password: await argon2.hash(newPassword) }
+    );
+
+    console.log("updatedUser", updatedUser);
 
     return { user };
   }
@@ -204,9 +214,9 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
-    @Ctx() { em, redis }: MyContext
+    @Ctx() { redis }: MyContext
   ) {
-    const user = await em.findOne(User, { email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return true;
     }

@@ -49,13 +49,13 @@ const Login: React.FC<registerProps> = () => {
                 type="password"
               />
             </Box>
-            <Flex justifyContent="flex-end">
+            <Flex justifyContent="flex-end" mt={2}>
               <NextLink href="/forgot-password">
                 <Link>forgot password?</Link>
               </NextLink>
             </Flex>
             <Button
-              mt={4}
+              mt={2}
               color="white"
               backgroundColor="blue"
               isLoading={isSubmitting}

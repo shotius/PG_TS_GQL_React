@@ -3,9 +3,7 @@ import { MyContext } from './types';
 import { UserResolver } from "./resolvers/user";
 import { PostResolver } from "./resolvers/post";
 import { HelloResolver } from "./resolvers/hello";
-import { MikroORM } from "@mikro-orm/core";
 import { COOKIE_NAME, __prod__ } from "./constants";
-import config from "./mikro-orm.config";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
@@ -13,6 +11,9 @@ import Redis from "ioredis";
 import session from 'express-session';
 import connectRedis from "connect-redis";
 import cors from 'cors'
+import {createConnection} from 'typeorm'
+import { User } from "entities/User";
+import { Post } from "entities/Post";
 
 declare module 'express-session' {
   export interface SessionData {
@@ -24,9 +25,15 @@ declare module 'express-session' {
 // and 'connect-redis'for cookie storage on the server
 
 const main = async () => {
-  // initialize ORM and run migrations - 'up'
-  const orm = await MikroORM.init(config);
-  await orm.getMigrator().up();
+  const conn = await createConnection({
+    type: "postgres",
+    database: "pg_gql_react_ts",
+    username: "postgres",
+    password: "1234",
+    logging: true,
+    synchronize: true,
+    entities: [User, Post]
+  })
 
   // initialize redis
   const RedisStore = connectRedis(session);
@@ -63,7 +70,7 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }), 
-    context: ({req, res}): MyContext => ({ em: orm.em, req, res, redis }),
+    context: ({req, res}): MyContext => ({ req, res, redis }),
   });
 
   apolloServer.applyMiddleware({ app, cors: false });

@@ -11,8 +11,6 @@ export const Navbar: React.FC = () => {
   });
   let body = null;
 
-  console.log(" data: ", data)
-
   // if loading
   if (fetching) {
     body = null;
