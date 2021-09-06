@@ -12,8 +12,9 @@ import session from 'express-session';
 import connectRedis from "connect-redis";
 import cors from 'cors'
 import {createConnection} from 'typeorm'
-import { User } from "entities/User";
-import { Post } from "entities/Post";
+import { User } from "./entities/User";
+import { Post } from "./entities/Post";
+
 
 declare module 'express-session' {
   export interface SessionData {

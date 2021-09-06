@@ -1,0 +1,8 @@
+mutation CreatePost($options: PostInput!) {
+  createPost(input: $options) {
+    id
+    title
+    text
+    creatorId
+  }
+}

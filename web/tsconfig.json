@@ -26,12 +26,13 @@
     "jsx": "preserve",
     "allowJs": true,
     "skipLibCheck": false,
-    "incremental": true
+    "incremental": true,
+    "baseUrl": "."
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
+    "./src/**/*.ts",
+    "./src/**/*.tsx"
 , "next.config.js"  ],
   "exclude": [
     "node_modules"

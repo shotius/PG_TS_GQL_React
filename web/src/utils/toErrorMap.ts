@@ -1,4 +1,4 @@
-import { FieldError } from "../generated/graphql";
+import { FieldError } from "src/generated/graphql"
 
 export const toErrorMap = (errors: FieldError[] ) => {
     const errorMap: Record<string, string> = {}
